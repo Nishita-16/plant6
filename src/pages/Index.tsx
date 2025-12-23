@@ -50,7 +50,12 @@ const mongoPlants: Plant[] = posts.map((post) => ({
   botanicalName: 'Community Contribution',
   medicinalUse: post.description,
   description: post.description, // required
-  imageUrl: `http://localhost:5000/${post.imageUrl?.replace(/\\/g, '/')}`,
+  //imageUrl: `http://localhost:5000/${post.imageUrl?.replace(/\\/g, '/')}`,
+//image: `http://localhost:5000/${post.imageUrl?.replace(/\\/g, '/')}`,
+imageUrl: post.imageUrl
+  ? `http://localhost:5000/${post.imageUrl.replace(/\\/g, '/')}`
+  : '/placeholder.png',
+
   category: 'community',
   location: {
     lat: 0, // default

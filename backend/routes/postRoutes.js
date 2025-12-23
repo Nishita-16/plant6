@@ -22,7 +22,9 @@ router.post('/', upload.single('image'), async (req, res) => {
       plantName: req.body.plantName,
       description: req.body.description,
       location: req.body.location,
-      imageUrl: req.file ? req.file.filename : null,
+      // imageUrl: req.file ? req.file.filename : null,
+      imageUrl: req.file.path.replace(/\\/g, '/')
+
     });
 
     await post.save();
