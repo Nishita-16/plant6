@@ -129,7 +129,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, onClick, variant = 'defaul
 
         {/* AYUSH Systems */}
         <div className="flex flex-wrap gap-1">
-          {plant.ayushSystem.map((system) => (
+          {plant.ayushSystem?.map((system) => (
             <Badge key={system} variant="secondary" className="text-xs">
               {system}
             </Badge>

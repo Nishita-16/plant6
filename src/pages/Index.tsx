@@ -9,6 +9,9 @@ import BottomNavbar from '@/components/navigation/BottomNavbar';
 import PlantCard from '@/components/plants/PlantCard';
 import AIChatbot from '@/components/chat/AIChatbot';
 import { useApp } from '@/context/AppContext';
+import { useEffect } from 'react';
+import axios from 'axios';
+import { Plant } from '@/types'; // make sure this path is correct
 
 const categories = [
   { id: 'all', label: 'All' },
@@ -18,15 +21,61 @@ const categories = [
   { id: 'stress', label: 'Mental Wellness' },
   { id: 'pain', label: 'Pain & Inflammation' },
   { id: 'respiratory', label: 'Respiratory' },
+  { id: 'community', label: 'Community' }, // ✅ ADD THIS
 ];
 
 const Index: React.FC = () => {
   const { plants } = useApp();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const filteredPlants = selectedCategory === 'all'
-    ? plants
-    : plants.filter((plant) => plant.category === selectedCategory);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [posts, setPosts] = useState<any[]>([]);
+
+  // Fetch community posts from MongoDB
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/posts');
+        setPosts(res.data);
+      } catch (err) {
+        console.error('Failed to fetch posts', err);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+const mongoPlants: Plant[] = posts.map((post) => ({
+  id: `community-${post._id}`,
+  name: post.plantName,
+  botanicalName: 'Community Contribution',
+  medicinalUse: post.description,
+  description: post.description, // required
+  imageUrl: `http://localhost:5000/${post.imageUrl?.replace(/\\/g, '/')}`,
+  category: 'community',
+  location: {
+    lat: 0, // default
+    lng: 0, // default
+    region: post.location || 'Unknown',
+  },
+  ayushSystem: [],
+  likes: 0,
+  isLiked: false,
+  isBookmarked: false,
+}));
+
+
+
+
+
+  // Merge static plants + community plants
+  const allPlants = [...plants, ...mongoPlants];
+
+  // Apply category filter
+  const filteredPlants =
+    selectedCategory === 'all'
+      ? allPlants
+      : allPlants.filter((plant) => plant.category === selectedCategory);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,7 +123,7 @@ const Index: React.FC = () => {
           </motion.div>
         </div>
       </section>
-
+      
       {/* Interactive Herbal Garden Section */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-6">
@@ -132,6 +181,52 @@ const Index: React.FC = () => {
           )}
         </div>
       </section>
+{/* Community Posts Section
+<section className="py-16 bg-muted/30">
+  <div className="container mx-auto px-6">
+    <h2 className="font-serif text-3xl font-bold mb-8 text-center">
+      🌿 Community Posts
+    </h2>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {posts.map((post) => (
+        <div
+          key={post._id}
+          className="bg-card border rounded-xl p-4 shadow-sm"
+        >
+          <h3 className="text-xl font-semibold mb-2">
+            {post.plantName}
+          </h3>
+
+          <p className="text-muted-foreground mb-3">
+            {post.description}
+          </p>
+
+          {post.imageUrl && (
+  <img
+    src={`http://localhost:5000/${post.imageUrl.replace(/\\/g, '/')}`}
+    alt={post.plantName}
+    className="rounded-lg mb-3 max-h-60 object-cover w-full"
+  />
+)}
+
+
+          {post.location && (
+            <p className="text-sm text-muted-foreground">
+              📍 {post.location}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+
+    {posts.length === 0 && (
+      <p className="text-center text-muted-foreground mt-6">
+        No community posts yet 🌱
+      </p>
+    )}
+  </div>
+</section> */}
 
       {/* CTA Section */}
       <section className="py-16 md:py-20 bg-primary">

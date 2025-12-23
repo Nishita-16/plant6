@@ -1,10 +1,12 @@
 export type PlantCategory = 
+  | 'all'
   | 'immunity' 
   | 'digestion' 
   | 'skin' 
   | 'respiratory' 
   | 'stress' 
-  | 'general';
+  | 'general'
+  | 'community';
 
 export type AyushSystem = 
   | 'Ayurveda' 
