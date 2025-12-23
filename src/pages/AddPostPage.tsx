@@ -12,6 +12,7 @@ import BottomNavbar from '@/components/navigation/BottomNavbar';
 import AIChatbot from '@/components/chat/AIChatbot';
 import { useApp } from '@/context/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 
 const AddPostPage: React.FC = () => {
   const { isAuthenticated, addPost } = useApp();
@@ -19,63 +20,65 @@ const AddPostPage: React.FC = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    plantName: '',
-    description: '',
-    location: '',
-    imageUrl: '',
-  });
+  plantName: '',
+  description: '',
+  location: '',
+  imageFile: null as File | null,
+});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isAuthenticated) {
-      toast({
-        title: 'Please sign in',
-        description: 'You need to be signed in to add a post.',
-        variant: 'destructive',
-      });
-      navigate('/profile');
-      return;
-    }
 
-    if (!formData.plantName || !formData.description) {
-      toast({
-        title: 'Missing information',
-        description: 'Please fill in the plant name and description.',
-        variant: 'destructive',
-      });
-      return;
-    }
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setIsSubmitting(true);
+  if (!isAuthenticated) return;
 
-    try {
-      addPost({
-        plantName: formData.plantName,
-        description: formData.description,
-        location: formData.location || undefined,
-        imageUrl: formData.imageUrl || undefined,
-        isLiked: false,
-        isBookmarked: false,
-      });
+  if (!formData.plantName || !formData.description || !formData.imageFile) {
+    toast({
+      title: 'Missing information',
+      description: 'Plant name, description and image are required.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-      toast({
-        title: 'Post submitted! 🌿',
-        description: 'Your post is pending moderation and will be visible soon.',
-      });
+  setIsSubmitting(true);
 
-      setFormData({ plantName: '', description: '', location: '', imageUrl: '' });
-      navigate('/profile');
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to submit post. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    const data = new FormData();
+    data.append('plantName', formData.plantName);
+    data.append('description', formData.description);
+    data.append('location', formData.location);
+    data.append('image', formData.imageFile);
+
+   // await addPost(data); // backend-ready
+   await axios.post(
+  'http://localhost:5000/api/posts',
+  data,
+  {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }
+);
+
+
+    toast({
+      title: 'Post submitted 🌿',
+      description: 'Your post is pending moderation.',
+    });
+
+    navigate('/profile');
+  } catch (err) {
+    toast({
+      title: 'Error',
+      description: 'Failed to submit post.',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,18 +141,12 @@ const AddPostPage: React.FC = () => {
             className="space-y-6 bg-card rounded-2xl p-6 md:p-8 card-shadow border border-border"
           >
             {/* Plant Name */}
-            <div className="space-y-2">
-              <Label htmlFor="plantName" className="text-base">
-                Plant Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="plantName"
-                placeholder="e.g., Tulsi, Ashwagandha, Neem..."
-                value={formData.plantName}
-                onChange={(e) => setFormData({ ...formData, plantName: e.target.value })}
-                className="h-12"
-              />
-            </div>
+            {/* Image Upload */}
+<div className="space-y-2"> 
+  <Label htmlFor="plantName" className="text-base"> 
+    Plant Name <span className="text-destructive">*</span>
+     </Label> <Input id="plantName" placeholder="e.g., Tulsi, Ashwagandha, Neem..." value={formData.plantName} onChange={(e) => setFormData({ ...formData, plantName: e.target.value })} className="h-12" /> </div>
+
 
             {/* Description */}
             <div className="space-y-2">
@@ -169,22 +166,33 @@ const AddPostPage: React.FC = () => {
             </div>
 
             {/* Image URL */}
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl" className="text-base flex items-center gap-2">
-                <ImageIcon className="w-4 h-4" />
-                Image URL (optional)
-              </Label>
-              <Input
-                id="imageUrl"
-                placeholder="https://example.com/plant-image.jpg"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                className="h-12"
-              />
-              <p className="text-xs text-muted-foreground">
-                Paste a direct link to an image of the plant
-              </p>
-            </div>
+            {/* Image Upload */}
+<div className="space-y-2">
+  <Label htmlFor="image" className="text-base flex items-center gap-2">
+    <Upload className="w-4 h-4" />
+    Upload Plant Image <span className="text-destructive">*</span>
+  </Label>
+
+  <Input
+    id="image"
+    type="file"
+    accept="image/*"
+    onChange={(e) =>
+      setFormData({
+        ...formData,
+        imageFile: e.target.files ? e.target.files[0] : null,
+      })
+    }
+    className="h-12"
+  />
+
+  {formData.imageFile && (
+    <p className="text-xs text-muted-foreground">
+      Selected: {formData.imageFile.name}
+    </p>
+  )}
+</div>
+
 
             {/* Location */}
             <div className="space-y-2">
