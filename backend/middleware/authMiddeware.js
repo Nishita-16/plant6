@@ -15,6 +15,10 @@ const protect = async (req, res, next) => {
   } else {
     res.status(401).json({ message: 'Not authorized, no token' });
   }
+  console.log("AUTH HEADER:", req.headers.authorization);
+// AUTH HEADER: Bearer eyJhbGciOi...
+// USER FROM TOKEN: { id: "65f..." }
+console.log("USER FROM TOKEN:", req.user);
 };
 
 module.exports = protect;

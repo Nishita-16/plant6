@@ -34,7 +34,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-
+const savedRoutes = require("./routes/savedRoutes");
 dotenv.config();
 
 const app = express();
@@ -47,6 +47,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // routes
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use("/api/saved", require("./routes/savedRoutes"));
 
 // mongo connection
 mongoose.connect(process.env.MONGO_URI)

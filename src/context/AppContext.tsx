@@ -542,6 +542,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       )
     );
   };
+  
 
   // 🔖 BOOKMARK POST
   const toggleBookmarkPost = (postId: string) => {
