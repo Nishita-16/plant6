@@ -4,11 +4,23 @@ const Saved = require("../models/Saved");
 const auth = require("../middleware/authMiddeware");
 
 // GET saved posts
+// router.get("/", auth, async (req, res) => {
+//   try {
+//     const saved = await Saved.find({ user: req.user.id });
+//     res.json(saved);
+//   } catch (err) {
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+// GET saved posts
 router.get("/", auth, async (req, res) => {
   try {
-    const saved = await Saved.find({ user: req.user.id });
+    const saved = await Saved.find({ user: req.user.id })
+      .populate("post"); // 👈 THIS LINE IS KEY
+
     res.json(saved);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
