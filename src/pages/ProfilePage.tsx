@@ -334,13 +334,9 @@
 
 
 
-
-
-
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import {
   User,
   Heart,
@@ -363,6 +359,7 @@ import PlantCard from '@/components/plants/PlantCard';
 import AIChatbot from '@/components/chat/AIChatbot';
 import { useApp } from '@/context/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import { Plant, PlantCategory, UserPost } from '@/types';
 
 const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, login, logout, signup, plants, posts } = useApp();
@@ -372,9 +369,47 @@ const ProfilePage: React.FC = () => {
   const [signupData, setSignupData] = useState({ name: '', email: '', password: '' });
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
 
+  // Fetch saved posts
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedPosts([]);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios
+      .get("http://localhost:5000/api/saved", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setSavedPosts(res.data))
+      .catch((err) => console.error("Fetch saved failed", err));
+  }, [isAuthenticated]);
+
+  // Filter liked plants
   const likedPlants = plants.filter((p) => p.isLiked);
-  const bookmarkedPlants = plants.filter((p) => p.isBookmarked);
+
+  // Map saved posts to Plant type safely
+  const bookmarkedPlants: Plant[] = savedPosts.map((item) => ({
+    id: item.post._id,
+    name: item.post.plantName,
+    botanicalName: "Community Contribution",
+    description: item.post.description,
+    medicinalUse: item.post.description,
+    imageUrl: item.post.imageUrl
+      ? `http://localhost:5000/${item.post.imageUrl.replace(/\\/g, "/")}`
+      : "/placeholder.png",
+    category: "community" as PlantCategory, // ✅ TS-safe
+    location: { lat: 0, lng: 0, region: "Unknown" },
+    ayushSystem: [],
+    likes: 0,
+    isLiked: false,
+    isBookmarked: true,
+  }));
+
   const userPosts = posts.filter((p) => p.userId === user?.id);
 
   // 🔐 LOGIN
@@ -398,7 +433,7 @@ const ProfilePage: React.FC = () => {
           description: 'You have successfully signed in.',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to sign in. Please try again.',
@@ -431,7 +466,7 @@ const ProfilePage: React.FC = () => {
         });
         setIsSignup(false);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to sign up. Please try again.',
@@ -457,7 +492,6 @@ const ProfilePage: React.FC = () => {
       <div className="min-h-screen bg-background">
         <TopNavbar />
         <BottomNavbar />
-
         <main className="pt-20 pb-24 md:pb-8">
           <div className="container mx-auto px-6 max-w-md">
             <motion.div
@@ -485,7 +519,6 @@ const ProfilePage: React.FC = () => {
               onSubmit={isSignup ? handleSignup : handleLogin}
               className="bg-card rounded-2xl p-6 card-shadow border border-border space-y-6"
             >
-              {/* Signup Name Field */}
               {isSignup && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
@@ -499,7 +532,6 @@ const ProfilePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -519,7 +551,6 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -539,7 +570,6 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <Button type="submit" size="lg" className="w-full gap-2" disabled={isLoading}>
                 {isLoading
                   ? isSignup
@@ -550,7 +580,6 @@ const ProfilePage: React.FC = () => {
                   : 'Sign In'}
               </Button>
 
-              {/* Toggle Link */}
               <p className="text-center text-sm text-muted-foreground mt-4">
                 {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
                 <button
@@ -706,7 +735,7 @@ const ProfilePage: React.FC = () => {
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground line-clamp-2">{post.description}</p>
-                            <p className="text-xs text-muted-foreground mt-2">{post.createdAt.toLocaleDateString()} • {post.likes} likes</p>
+                            <p className="text-xs text-muted-foreground mt-2">{new Date(post.createdAt).toLocaleDateString()} • {post.likes} likes</p>
                           </div>
                         </div>
                       </motion.div>
