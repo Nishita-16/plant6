@@ -283,10 +283,9 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Search, Leaf, MapPin, Users, Sparkles } from 'lucide-react';
+import { Users, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -314,6 +313,7 @@ const Index: React.FC = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(10);
 
   /* ================= FETCH COMMUNITY POSTS ================= */
   useEffect(() => {
@@ -333,16 +333,21 @@ const Index: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => {
-        // IMPORTANT: convert to string array
         const ids = res.data.map((p: any) => p.post.toString());
         setSavedIds(ids);
       })
       .catch(err => console.error('Saved fetch failed', err));
   }, []);
+  useEffect(() => {
+  if (selectedCategory === 'community') {
+    setVisibleCount(10);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}, [selectedCategory]);
+
 
   /* ================= SAVE POST ================= */
   const savePost = async (postId: string) => {
-    console.log("SAVE BUTTON CLICKED:", postId);
     const token = localStorage.getItem('token');
     if (!token) {
       alert('Please login first');
@@ -357,7 +362,6 @@ const Index: React.FC = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setSavedIds(prev => [...prev, postId]);
     } catch (err) {
       console.error('Save failed', err);
@@ -366,7 +370,7 @@ const Index: React.FC = () => {
 
   /* ================= MAP COMMUNITY POSTS ================= */
   const mongoPlants: Plant[] = posts.map(post => ({
-    id: post._id, // IMPORTANT: real ID only
+    id: post._id,
     name: post.plantName,
     botanicalName: 'Community Contribution',
     medicinalUse: post.description,
@@ -382,12 +386,17 @@ const Index: React.FC = () => {
     isBookmarked: false,
   }));
 
-  const allPlants = [...plants, ...mongoPlants];
+  const visibleCommunityPlants = mongoPlants.slice(0, visibleCount);
+
+  const allPlants = [...plants, ...visibleCommunityPlants];
 
   const filteredPlants =
-    selectedCategory === 'all'
-      ? allPlants
-      : allPlants.filter(p => p.category === selectedCategory);
+  selectedCategory === 'community'
+    ? visibleCommunityPlants
+    : selectedCategory === 'all'
+    ? [...plants, ...visibleCommunityPlants]
+    : plants.filter(p => p.category === selectedCategory);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -401,12 +410,13 @@ const Index: React.FC = () => {
           Virtual Herbal Garden
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold">
-          Discover the Healing Power of <span className="text-primary">Nature</span>
+          Discover the Healing Power of{' '}
+          <span className="text-primary">Nature</span>
         </h1>
       </section>
 
       {/* ================= CATEGORY ================= */}
-      <section className="py-12">
+      <section className="py-12 pb-16">
         <div className="flex flex-wrap gap-2 justify-center mb-10">
           {categories.map(cat => (
             <Button
@@ -421,39 +431,53 @@ const Index: React.FC = () => {
         </div>
 
         {/* ================= PLANTS GRID ================= */}
-            <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6">
-  {filteredPlants.map((plant) => (
-    <div key={plant.id} className="relative flex flex-col">
+        <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6">
+          {filteredPlants.map(plant => (
+            <div key={plant.id} className="flex flex-col">
+              <PlantCard plant={plant} />
 
-      {/* CARD WRAPPER */}
-      <div className="relative">
-        <PlantCard plant={plant} />
-      </div>
+              {plant.category === 'community' && (
+                <button
+                  type="button"
+                  className={`mt-2 px-3 py-1 rounded text-white ${
+                    savedIds.includes(plant.id)
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600'
+                  }`}
+                  disabled={savedIds.includes(plant.id)}
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    savePost(plant.id);
+                  }}
+                >
+                  {savedIds.includes(plant.id) ? 'Saved' : 'Save'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
 
-      {/* SAVE BUTTON — OUTSIDE absolute inset area */}
-      {plant.category === 'community' && (
-        <button
-          type="button"
-          className={`mt-2 px-3 py-1 rounded text-white z-50 relative ${
-            savedIds.includes(plant.id)
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-green-600'
-          }`}
-          disabled={savedIds.includes(plant.id)}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('SAVE CLICKED:', plant.id);
-            savePost(plant.id);
-          }}
-        >
-          {savedIds.includes(plant.id) ? 'Saved' : 'Save'}
-        </button>
-      )}
+        {/* ================= VIEW MORE ================= */}
+        {/* ================= VIEW MORE ================= */}
+        {/* <p className="text-center text-red-600">
+  DEBUG: {mongoPlants.length} posts | visible {visibleCount}
+</p> */}
+{/* <p className="text-center text-red-600">
+  total posts: {mongoPlants.length} | visible: {visibleCount}
+</p> */}
 
-    </div>
-  ))}
+
+<div className="container mx-auto flex justify-center py-8 relative z-10">
+  <Button
+    size="lg"
+    variant="outline"
+    onClick={() => setVisibleCount(prev => prev + 10)}
+  >
+    View More
+  </Button>
 </div>
+
 
 
       </section>
@@ -461,13 +485,18 @@ const Index: React.FC = () => {
       {/* ================= CTA ================= */}
       <section className="py-16 bg-primary text-center">
         <Users className="w-12 h-12 mx-auto text-white mb-4" />
-        <h2 className="text-3xl text-white font-bold mb-4">Share Your Knowledge</h2>
+        <h2 className="text-3xl text-white font-bold mb-4">
+          Share Your Knowledge
+        </h2>
         <Link to="/add-post">
           <Button size="lg">Add Your Post</Button>
         </Link>
       </section>
+<div className="relative z-50">
+  <AIChatbot />
+</div>
 
-      <AIChatbot />
+      {/* <AIChatbot /> */}
     </div>
   );
 };
